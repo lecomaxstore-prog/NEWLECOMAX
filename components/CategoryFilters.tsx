@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import type { Product } from "@/lib/products";
@@ -129,8 +129,10 @@ export default function CategoryFilters({
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10">
-            {filtered.map((p) => (
-              <ProductCard key={p.slug} product={p} />
+            {filtered.map((p, i) => (
+              <CardReveal key={p.slug} delay={Math.min(i * 60, 480)}>
+                <ProductCard product={p} />
+              </CardReveal>
             ))}
           </div>
         )}
@@ -152,5 +154,32 @@ export default function CategoryFilters({
         </div>
       </div>
     </>
+  );
+}
+
+/** Individual card with IntersectionObserver reveal + stagger delay */
+function CardReveal({ children, delay }: { children: React.ReactNode; delay: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => el.classList.add("in"), delay);
+          obs.unobserve(el);
+        }
+      },
+      { threshold: 0.05, rootMargin: "0px 0px -30px 0px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [delay]);
+
+  return (
+    <div ref={ref} className="card-sr">
+      {children}
+    </div>
   );
 }

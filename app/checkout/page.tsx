@@ -17,51 +17,61 @@ const empty: Field = {
   adresse: "", ville: "", codePostal: "",
 };
 
-const CITIES = [
-  "Casablanca", "Rabat", "Marrakech", "Fès", "Tanger", "Agadir",
-  "Meknès", "Oujda", "Kénitra", "Tétouan", "Salé", "Nador",
-];
+
+
+
 
 function Input({
-  label, name, value, error, type = "text", placeholder, onChange,
+  label, name, value, error, type = "text", placeholder, icon, onChange,
 }: {
   label: string; name: keyof Field; value: string; error?: string;
-  type?: string; placeholder?: string;
+  type?: string; placeholder?: string; icon?: React.ReactNode;
   onChange: (k: keyof Field, v: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-bold uppercase tracking-[0.08em] text-neutral-500">
+    <div className="flex flex-col gap-1">
+      <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-neutral-400">
         {label}
       </label>
       <div className="relative">
+        {icon && (
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">
+            {icon}
+          </div>
+        )}
         <input
           type={type}
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(name, e.target.value)}
-          className={`w-full px-4 py-3 text-sm border rounded-lg outline-none transition-all duration-200 bg-white
-            focus:ring-2 focus:ring-black/10 focus:border-black
-            ${error ? "border-red-400 bg-red-50/40" : "border-neutral-200 hover:border-neutral-400"}`}
+          className={`w-full ${icon ? "pl-10" : "pl-4"} pr-4 py-3 text-sm border-0 border-b-2 bg-neutral-50 rounded-xl outline-none transition-all duration-200
+            focus:bg-white focus:shadow-[0_0_0_2px_rgba(0,0,0,0.08)] focus:border-b-black
+            ${error ? "border-b-red-400 bg-red-50/50" : "border-b-neutral-200 hover:border-b-neutral-400"}`}
         />
         {error && (
-          <p className="absolute -bottom-5 left-0 text-[10px] text-red-500 font-medium">{error}</p>
+          <p className="mt-1 text-[10px] text-red-500 font-medium flex items-center gap-1">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            {error}
+          </p>
         )}
       </div>
     </div>
   );
 }
 
-function Section({ step, title, children }: { step: number; title: string; children: React.ReactNode }) {
+function Section({ step, title, icon, children }: { step: number; title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="border border-neutral-100 rounded-2xl p-6 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-      <div className="flex items-center gap-3 mb-6">
-        <span className="w-7 h-7 rounded-full bg-black text-white text-xs font-black flex items-center justify-center shrink-0">
-          {step}
-        </span>
-        <h2 className="font-bold text-[15px] uppercase tracking-[0.06em]">{title}</h2>
+    <div className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)]">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-neutral-100 bg-neutral-50/50">
+        <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center shrink-0">
+          {icon}
+        </div>
+        <div className="flex items-baseline gap-2">
+          <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Étape {step}</span>
+          <h2 className="font-black text-[14px] uppercase tracking-[0.06em]">{title}</h2>
+        </div>
       </div>
-      {children}
+      <div className="p-6">{children}</div>
     </div>
   );
 }
@@ -86,26 +96,54 @@ export default function CheckoutPage() {
     const e: Partial<Field> = {};
     if (!form.prenom.trim()) e.prenom = "Requis";
     if (!form.nom.trim()) e.nom = "Requis";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email invalide";
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email invalide";
     if (!/^[0-9+\s\-()]{8,15}$/.test(form.telephone)) e.telephone = "Numéro invalide";
     if (!form.adresse.trim()) e.adresse = "Requis";
     if (!form.ville.trim()) e.ville = "Requis";
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
     setLoading(true);
     const number = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const orderLines = items
+      .map((i) => `• ${i.name} (Taille: ${i.size}) × ${i.quantity} = ${formatMAD(i.price * i.quantity)}`)
+      .join("\n");
+
+    try {
+      await fetch("https://formspree.io/f/xvzdjpee", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          _subject: `🛍️ Nouvelle commande ${number} — ${form.prenom} ${form.nom}`,
+          commande: number,
+          client: `${form.prenom} ${form.nom}`,
+          email: form.email,
+          telephone: form.telephone,
+          adresse: `${form.adresse}, ${form.ville}${form.codePostal ? " " + form.codePostal : ""}`,
+          paiement: payment === "livraison" ? "Paiement à la livraison" : "Carte bancaire",
+          articles: orderLines,
+          sous_total: formatMAD(total),
+          livraison: shipping === 0 ? "Gratuite" : formatMAD(shipping),
+          total: formatMAD(grandTotal),
+          date: new Date().toLocaleString("fr-MA", { timeZone: "Africa/Casablanca" }),
+        }),
+      });
+    } catch {
+      // Continue even if email fails — still save order locally
+    }
+
     localStorage.setItem(
       "lecomax_last_order",
       JSON.stringify({ number, items, total: grandTotal, shipping, customer: form, payment, date: new Date().toISOString() })
     );
     clear();
-    setTimeout(() => router.push("/merci"), 600);
+    router.push("/merci");
   };
 
   if (items.length === 0 && !loading) {
@@ -120,109 +158,152 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      {/* Top bar */}
-      <div className="sticky top-0 z-20 bg-white border-b border-neutral-100 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+    <div className="min-h-screen bg-[#f7f7f8]">
+      {/* ── Top bar ── */}
+      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-neutral-100">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/panier" className="flex items-center gap-2 text-sm text-neutral-500 hover:text-black transition-colors font-medium">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
+          <Link href="/panier" className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-black transition-colors">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             Panier
           </Link>
-          <span className="font-black text-[13px] uppercase tracking-[0.12em]">L&apos;ecomax</span>
-          <div className="flex items-center gap-1.5 text-xs text-neutral-400">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <span className="font-medium">Paiement sécurisé</span>
+          <Link href="/" className="font-black text-[14px] uppercase tracking-[0.16em]">L&apos;ecomax</Link>
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Paiement sécurisé
           </div>
         </div>
-        {/* Progress */}
-        <div className="flex border-t border-neutral-50">
-          {["Informations", "Livraison", "Confirmation"].map((s, i) => (
-            <div key={s} className={`flex-1 py-2 text-center text-[10px] font-bold uppercase tracking-[0.1em] ${i === 0 ? "text-black border-b-2 border-black" : "text-neutral-300"}`}>
-              {s}
+        {/* Step progress */}
+        <div className="max-w-5xl mx-auto px-4 pb-3 flex items-center gap-2">
+          {[
+            { label: "Coordonnées", n: 1 },
+            { label: "Livraison", n: 2 },
+            { label: "Paiement", n: 3 },
+          ].map((s, i) => (
+            <div key={s.n} className="flex items-center gap-2">
+              <div className={`flex items-center gap-1.5 text-[11px] font-bold ${i === 0 ? "text-black" : "text-neutral-300"}`}>
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${i === 0 ? "bg-black text-white" : "bg-neutral-200 text-neutral-400"}`}>{s.n}</span>
+                <span className="hidden sm:block uppercase tracking-wider">{s.label}</span>
+              </div>
+              {i < 2 && <div className="w-8 h-px bg-neutral-200" />}
             </div>
           ))}
         </div>
       </div>
 
       <form onSubmit={handleSubmit} noValidate>
-        <div className="max-w-5xl mx-auto px-4 py-8 grid lg:grid-cols-[1fr_380px] gap-6 items-start">
+        <div className="max-w-5xl mx-auto px-4 py-8 grid lg:grid-cols-[1fr_360px] gap-6 items-start">
           {/* ── Left: Form ── */}
-          <div className="flex flex-col gap-5">
-            <Section step={1} title="Vos coordonnées">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-                <Input label="Prénom" name="prenom" value={form.prenom} error={errors.prenom} onChange={set} placeholder="Mohammed" />
-                <Input label="Nom" name="nom" value={form.nom} error={errors.nom} onChange={set} placeholder="El Idrissi" />
+          <div className="flex flex-col gap-4">
+
+            {/* Section 1 */}
+            <Section step={1} title="Vos coordonnées" icon={
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            }>
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Prénom *" name="prenom" value={form.prenom} error={errors.prenom} onChange={set} placeholder="Mohammed"
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>} />
+                <Input label="Nom *" name="nom" value={form.nom} error={errors.nom} onChange={set} placeholder="El Idrissi" />
               </div>
-              <div className="mt-6 grid grid-cols-1 gap-6">
-                <Input label="Adresse email" name="email" value={form.email} error={errors.email} type="email" onChange={set} placeholder="exemple@gmail.com" />
-                <Input label="Téléphone" name="telephone" value={form.telephone} error={errors.telephone} type="tel" onChange={set} placeholder="06 12 34 56 78" />
+              <div className="mt-4 grid grid-cols-1 gap-4">
+                <Input label="Adresse email" name="email" value={form.email} error={errors.email} type="email" onChange={set} placeholder="exemple@gmail.com"
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>} />
+                <Input label="Téléphone *" name="telephone" value={form.telephone} error={errors.telephone} type="tel" onChange={set} placeholder="06 12 34 56 78"
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.39 2 2 0 0 1 3.59 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.97-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>} />
               </div>
             </Section>
 
-            <Section step={2} title="Adresse de livraison">
-              <div className="flex flex-col gap-6">
-                <Input label="Adresse complète" name="adresse" value={form.adresse} error={errors.adresse} onChange={set} placeholder="25 Rue Mohammed V, Appt 4" />
-                <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold uppercase tracking-[0.08em] text-neutral-500">Ville</label>
-                    <select
-                      value={form.ville}
-                      onChange={(e) => set("ville", e.target.value)}
-                      className={`w-full px-4 py-3 text-sm border rounded-lg outline-none transition-all duration-200 bg-white appearance-none cursor-pointer
-                        focus:ring-2 focus:ring-black/10 focus:border-black
-                        ${errors.ville ? "border-red-400 bg-red-50/40" : "border-neutral-200 hover:border-neutral-400"}`}
-                    >
-                      <option value="">Choisir...</option>
-                      {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    {errors.ville && <p className="text-[10px] text-red-500 font-medium">{errors.ville}</p>}
-                  </div>
-                  <Input label="Code postal" name="codePostal" value={form.codePostal} onChange={set} placeholder="20000" />
+            {/* Section 2 */}
+            <Section step={2} title="Adresse de livraison" icon={
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            }>
+              <div className="flex flex-col gap-4">
+                <Input label="Adresse complète *" name="adresse" value={form.adresse} error={errors.adresse} onChange={set} placeholder="Rue, numéro, quartier…"
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>} />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label="Ville *" name="ville" value={form.ville} error={errors.ville} onChange={set} placeholder="Ex: Casablanca"
+                    icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>} />
+                  <Input label="Code postal" name="codePostal" value={form.codePostal} onChange={set} placeholder="24350" />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold uppercase tracking-[0.08em] text-neutral-500">Pays</label>
-                  <div className="flex items-center gap-3 px-4 py-3 border border-neutral-200 rounded-lg bg-neutral-50">
-                    <span className="text-lg">🇲🇦</span>
-                    <span className="text-sm font-medium text-neutral-700">Maroc</span>
-                    <span className="ml-auto text-[10px] text-neutral-400 uppercase font-bold">Seul pays disponible</span>
+                {/* Country */}
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-neutral-400 block mb-1">Pays</label>
+                  <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 rounded-xl border-b-2 border-neutral-200">
+                    <span className="text-base">🇲🇦</span>
+                    <span className="text-sm font-semibold text-neutral-600">Maroc</span>
+                    <span className="ml-auto text-[10px] text-neutral-400 uppercase tracking-wider font-bold bg-neutral-200 px-2 py-0.5 rounded-full">Uniquement</span>
                   </div>
                 </div>
               </div>
             </Section>
 
-            <Section step={3} title="Mode de paiement">
+            {/* Section 3 */}
+            <Section step={3} title="Mode de paiement" icon={
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            }>
               <div className="flex flex-col gap-3">
-                {[
-                  { id: "livraison", label: "Paiement à la livraison", sub: "Payez en espèces à la réception de votre colis.", icon: "💵" },
-                  { id: "carte", label: "Carte bancaire", sub: "Disponible prochainement.", icon: "💳", disabled: true },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    disabled={opt.disabled}
-                    onClick={() => !opt.disabled && setPayment(opt.id as "livraison" | "carte")}
-                    className={`flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all duration-200
-                      ${opt.disabled ? "opacity-40 cursor-not-allowed border-neutral-100 bg-neutral-50" :
-                        payment === opt.id ? "border-black bg-black/[0.02] shadow-[0_0_0_1px_black]" : "border-neutral-200 hover:border-neutral-400 bg-white"}`}
-                  >
-                    <span className="text-2xl mt-0.5 shrink-0">{opt.icon}</span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-[13px]">{opt.label}</span>
-                        {!opt.disabled && (
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ml-auto shrink-0 ${payment === opt.id ? "border-black bg-black" : "border-neutral-300"}`}>
-                            {payment === opt.id && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                          </span>
-                        )}
+                {/* Cash on delivery */}
+                <button
+                  type="button"
+                  onClick={() => setPayment("livraison")}
+                  className={`group relative flex items-center gap-4 p-5 rounded-2xl border-2 text-left transition-all duration-200
+                    ${payment === "livraison"
+                      ? "border-black bg-black text-white shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
+                      : "border-neutral-200 bg-white hover:border-neutral-400 hover:shadow-md"}`}
+                >
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${payment === "livraison" ? "bg-white/10" : "bg-neutral-100"}`}>
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={payment === "livraison" ? "white" : "#111"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 9V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2m2 4h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2zm7-5a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-black text-[14px] ${payment === "livraison" ? "text-white" : "text-black"}`}>Paiement à la livraison</p>
+                    <p className={`text-[12px] mt-1 leading-relaxed ${payment === "livraison" ? "text-white/60" : "text-neutral-400"}`}>Payez en espèces à la réception</p>
+                    {payment === "livraison" && (
+                      <span className="inline-flex items-center gap-1.5 mt-2 text-[11px] text-emerald-300 font-bold">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Sélectionné
+                      </span>
+                    )}
+                  </div>
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${payment === "livraison" ? "border-white bg-white" : "border-neutral-300"}`}>
+                    {payment === "livraison" && <span className="w-2.5 h-2.5 rounded-full bg-black" />}
+                  </div>
+                </button>
+
+                {/* Card — coming soon */}
+                <div className="flex items-center gap-4 p-5 rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 opacity-40 cursor-not-allowed select-none">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-neutral-200 flex items-center justify-center shrink-0">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round">
+                      <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                      <line x1="5" y1="15" x2="8" y2="15"/><line x1="11" y1="15" x2="14" y2="15"/>
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-black text-[14px] text-neutral-400">Carte bancaire</p>
+                    <p className="text-[12px] text-neutral-400 mt-1">Disponible très bientôt</p>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500 bg-neutral-200 px-3 py-1.5 rounded-full">Bientôt</span>
+                </div>
+
+                {/* Trust banner */}
+                <div className="mt-1 rounded-2xl overflow-hidden border border-neutral-100">
+                  <div className="bg-neutral-50 px-4 py-3 flex items-center justify-center gap-1 border-b border-neutral-100">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span className="text-[11px] font-black uppercase tracking-widest text-green-700">Commande 100% sécurisée</span>
+                  </div>
+                  <div className="grid grid-cols-3 divide-x divide-neutral-100">
+                    {[
+                      { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>, label: "Livraison 2–5j" },
+                      { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>, label: "Paiement sûr" },
+                      { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>, label: "Retours 30j" },
+                    ].map((b) => (
+                      <div key={b.label} className="flex flex-col items-center gap-2 py-3.5 bg-white">
+                        <span className="text-neutral-600">{b.icon}</span>
+                        <span className="text-[10px] font-bold text-neutral-500 text-center leading-tight">{b.label}</span>
                       </div>
-                      <p className="text-[12px] text-neutral-400 mt-0.5">{opt.sub}</p>
-                    </div>
-                  </button>
-                ))}
+                    ))}
+                  </div>
+                </div>
               </div>
             </Section>
 
@@ -230,91 +311,102 @@ export default function CheckoutPage() {
             <button
               type="submit"
               disabled={loading}
-              className="lg:hidden w-full bg-black text-white py-4 rounded-2xl font-bold uppercase text-sm tracking-[0.08em] hover:bg-neutral-800 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-3"
+              className="lg:hidden w-full bg-black text-white py-4 rounded-2xl font-black uppercase text-sm tracking-[0.1em] hover:bg-neutral-800 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-3 shadow-[0_4px_14px_rgba(0,0,0,0.2)]"
             >
               {loading ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Traitement...
-                </>
+                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Traitement…</>
               ) : (
-                <>Confirmer ma commande &rarr;</>
+                <>Confirmer ma commande <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>
               )}
             </button>
           </div>
 
           {/* ── Right: Order summary ── */}
-          <aside className="lg:sticky lg:top-[97px]">
-            <div className="bg-white border border-neutral-100 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
-              <div className="px-5 py-4 border-b border-neutral-100">
-                <h3 className="font-bold text-[13px] uppercase tracking-[0.08em]">Récapitulatif</h3>
-                <p className="text-xs text-neutral-400 mt-0.5">{items.reduce((s, i) => s + i.quantity, 0)} article{items.reduce((s, i) => s + i.quantity, 0) !== 1 ? "s" : ""}</p>
+          <aside className="lg:sticky lg:top-[88px]">
+            <div className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)]">
+
+              {/* Header */}
+              <div className="px-5 pt-5 pb-4 border-b border-neutral-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-black text-[13px] uppercase tracking-[0.1em]">Votre commande</h3>
+                  <span className="text-[11px] font-bold text-neutral-400 bg-neutral-100 px-2.5 py-1 rounded-full">
+                    {items.reduce((s, i) => s + i.quantity, 0)} article{items.reduce((s, i) => s + i.quantity, 0) !== 1 ? "s" : ""}
+                  </span>
+                </div>
               </div>
 
               {/* Items */}
-              <ul className="divide-y divide-neutral-50 max-h-64 overflow-y-auto">
+              <ul className="divide-y divide-neutral-50 max-h-60 overflow-y-auto">
                 {items.map((item) => (
-                  <li key={item.slug + item.size} className="flex items-center gap-3 px-5 py-3">
-                    <div className="relative w-12 h-14 rounded-lg overflow-hidden bg-neutral-100 shrink-0">
-                      <Image src={item.image} alt={item.name} fill sizes="48px" className="object-cover" />
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-neutral-700 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                  <li key={item.slug + item.size} className="flex items-center gap-3 px-5 py-3.5">
+                    <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-neutral-100 shrink-0 border border-neutral-100">
+                      <Image src={item.image} alt={item.name} fill sizes="56px" className="object-cover" />
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm">
                         {item.quantity}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-semibold leading-tight truncate">{item.name}</p>
-                      <p className="text-[11px] text-neutral-400">{item.size}</p>
+                      <p className="text-[12px] font-bold leading-tight line-clamp-2">{item.name}</p>
+                      <p className="text-[11px] text-neutral-400 mt-0.5">Taille : {item.size}</p>
                     </div>
-                    <span className="text-[12px] font-bold shrink-0">{formatMAD(item.price * item.quantity)}</span>
+                    <span className="text-[13px] font-black shrink-0">{formatMAD(item.price * item.quantity)}</span>
                   </li>
                 ))}
               </ul>
 
               {/* Totals */}
-              <div className="px-5 py-4 border-t border-neutral-100 space-y-2">
+              <div className="px-5 py-4 space-y-2.5 border-t border-neutral-100 bg-neutral-50/60">
                 <div className="flex justify-between text-sm text-neutral-500">
-                  <span>Sous-total</span><span>{formatMAD(total)}</span>
+                  <span>Sous-total</span>
+                  <span className="font-semibold text-black">{formatMAD(total)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-neutral-500">
                   <span>Livraison</span>
-                  <span className={shipping === 0 ? "text-emerald-600 font-semibold" : ""}>{shipping === 0 ? "Gratuite" : formatMAD(shipping)}</span>
+                  <span className={`font-semibold ${shipping === 0 ? "text-emerald-600" : "text-black"}`}>
+                    {shipping === 0 ? "Gratuite 🎉" : formatMAD(shipping)}
+                  </span>
                 </div>
-                {shipping === 0 && total > 0 && (
-                  <p className="text-[10px] text-emerald-600 font-medium">✓ Livraison offerte dès 500 MAD</p>
+                {shipping > 0 && (
+                  <p className="text-[10px] text-neutral-400 bg-neutral-100 rounded-lg px-3 py-2">
+                    Livraison gratuite à partir de <strong>500 MAD</strong> d'achat
+                  </p>
                 )}
-                <div className="flex justify-between font-black text-base pt-2 border-t border-neutral-100">
-                  <span>Total</span><span>{formatMAD(grandTotal)}</span>
+                <div className="flex justify-between font-black text-[15px] pt-2 border-t border-neutral-200">
+                  <span>Total</span>
+                  <span>{formatMAD(grandTotal)}</span>
                 </div>
               </div>
 
-              {/* CTA (desktop) */}
-              <div className="px-5 pb-5">
+              {/* CTA */}
+              <div className="px-5 pb-5 pt-3">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="hidden lg:flex w-full bg-black text-white py-4 rounded-2xl font-bold uppercase text-sm tracking-[0.08em] hover:bg-neutral-800 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 items-center justify-center gap-3"
+                  className="hidden lg:flex w-full bg-black text-white py-4 rounded-xl font-black uppercase text-sm tracking-[0.1em] hover:bg-neutral-800 transition-all duration-200 active:scale-[0.99] disabled:opacity-60 items-center justify-center gap-2.5 shadow-[0_4px_14px_rgba(0,0,0,0.15)]"
                 >
                   {loading ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Traitement...
-                    </>
+                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Traitement…</>
                   ) : (
-                    <>Confirmer ma commande &rarr;</>
+                    <>Confirmer ma commande <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>
                   )}
                 </button>
-                <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-neutral-400 font-medium">
+                <div className="mt-4 flex items-center justify-center gap-3 text-[10px] text-neutral-400 font-semibold">
                   <span className="flex items-center gap-1">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     SSL sécurisé
                   </span>
-                  <span>·</span>
-                  <span>🚚 Livraison 2–5 jours</span>
-                  <span>·</span>
-                  <span>↩ Retours 14j</span>
+                  <span className="w-1 h-1 rounded-full bg-neutral-300" />
+                  <span>Livraison 2–5j</span>
+                  <span className="w-1 h-1 rounded-full bg-neutral-300" />
+                  <span>Retours 30j</span>
                 </div>
               </div>
             </div>
+
+            {/* Reassurance note */}
+            <p className="mt-3 text-center text-[11px] text-neutral-400 leading-relaxed px-2">
+              En confirmant, vous acceptez nos <span className="underline cursor-pointer hover:text-black">conditions générales</span>. Paiement à la livraison — aucune carte requise.
+            </p>
           </aside>
         </div>
       </form>

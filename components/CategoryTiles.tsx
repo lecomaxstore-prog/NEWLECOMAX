@@ -23,18 +23,18 @@ export default function CategoryTiles() {
   const [main, ...rest] = cats;
 
   return (
-    <section className="max-w-7xl mx-auto px-4 md:px-6 py-12">
-      <div className="flex items-end justify-between mb-6">
-        <h2 className="h-display text-3xl md:text-4xl">
+    <section className="max-w-7xl mx-auto px-4 md:px-6 py-16">
+      <div className="flex items-end justify-between mb-8 border-b border-neutral-100 pb-6">
+        <h2 className="h-display text-3xl md:text-[2.6rem]">
           Acheter par catégorie
         </h2>
-        <span className="hidden md:block text-sm text-muted">
+        <span className="hidden md:block text-[11px] uppercase tracking-[0.2em] text-neutral-400 font-bold">
           {cats.reduce((s, c) => s + c.count, 0)} articles
         </span>
       </div>
 
-      {/* Asymmetric grid: 1 tall left + 4 in 2×2 right */}
-      <div className="grid md:grid-cols-[1.25fr_1fr] gap-3">
+      {/* Asymmetric: big left + 2×2 right on md+, stacked on mobile */}
+      <div className="grid md:grid-cols-[1.2fr_1fr] gap-3">
         {/* Large left tile */}
         <Tile
           {...main}
@@ -43,9 +43,9 @@ export default function CategoryTiles() {
           sizes="(min-width: 768px) 55vw, 100vw"
         />
 
-        {/* 2×2 right grid */}
+        {/* 2×2 right grid — all 4 categories minus main */}
         <div className="grid grid-cols-2 grid-rows-2 gap-3">
-          {rest.map((c) => (
+          {rest.slice(0, 3).map((c) => (
             <Tile
               key={c.slug}
               {...c}
@@ -54,6 +54,33 @@ export default function CategoryTiles() {
               sizes="(min-width: 768px) 22vw, 50vw"
             />
           ))}
+          {/* 4th tile — "Tout Explorer" with photo */}
+          <Link
+            href="/homme"
+            className="relative block aspect-[4/3] overflow-hidden bg-black group"
+          >
+            <Image
+              src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=900&q=80"
+              alt="Tout explorer"
+              fill
+              sizes="(min-width: 768px) 22vw, 50vw"
+              className="object-cover opacity-45 group-hover:opacity-55 group-hover:scale-[1.06] transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-5">
+              <div className="w-9 h-9 border border-white/40 flex items-center justify-center group-hover:border-white group-hover:bg-white/10 transition-all duration-300">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </div>
+              <p className="text-white font-black text-[11px] uppercase tracking-[0.25em] text-center leading-tight">
+                Tout<br/>explorer
+              </p>
+              <p className="text-white/40 text-[10px] uppercase tracking-[0.2em] font-bold">
+                {cats.reduce((s, c) => s + c.count, 0)} articles
+              </p>
+            </div>
+          </Link>
         </div>
       </div>
     </section>
@@ -87,20 +114,19 @@ function Tile({
         alt={label}
         fill
         sizes={sizes}
-        className="object-cover group-hover:scale-105 transition-transform duration-700"
+        className="object-cover group-hover:scale-[1.04] transition-transform duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
       />
-      {/* gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
 
       {/* Content */}
-      <div className="absolute inset-0 flex flex-col justify-end p-5">
-        <p className="text-white/60 text-[10px] uppercase tracking-[0.25em] mb-1">
+      <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-6">
+        <p className="text-white/50 text-[10px] uppercase tracking-[0.3em] font-bold mb-1">
           {count} articles
         </p>
         <h3 className={`h-display text-white ${textSize}`}>{label}</h3>
-        <span className="mt-3 inline-flex items-center gap-2 self-start bg-white text-black text-[11px] font-bold uppercase px-3 py-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+        <span className="mt-3.5 inline-flex items-center gap-1.5 self-start bg-white text-black text-[10px] font-black uppercase px-3.5 py-2 tracking-[0.15em] opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
           Découvrir
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M5 12h14M12 5l7 7-7 7" />
           </svg>
         </span>

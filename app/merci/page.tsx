@@ -382,7 +382,9 @@ export default function MerciPage() {
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 min-w-0">
               <p className="text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400 mb-1">Confirmation</p>
               <p className="text-[11px] font-semibold text-neutral-900 truncate">{order.customer.email || "—"}</p>
-              <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Email envoyé ✓</p>
+              {order.customer.email && (
+                <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Email envoyé ✓</p>
+              )}
             </div>
           </div>
         )}
