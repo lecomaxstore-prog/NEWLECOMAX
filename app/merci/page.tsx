@@ -1,0 +1,421 @@
+﻿"use client";
+
+import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import type { CartItem } from "@/components/CartContext";
+import { formatMAD } from "@/lib/products";
+
+type Order = {
+  number: string;
+  items: CartItem[];
+  total: number;
+  shipping: number;
+  customer: { prenom: string; nom: string; email: string; ville: string };
+  payment: string;
+  date: string;
+};
+
+type Particle = {
+  id: number; color: string; left: number; size: number;
+  delay: number; duration: number; shape: "square" | "circle" | "diamond";
+};
+
+const CONFETTI_COLORS = [
+  "#FFD700", "#FF4500", "#00C49F", "#7C3AED", "#2563EB",
+  "#F97316", "#10B981", "#EC4899", "#FACC15", "#06B6D4",
+  "#A855F7", "#EF4444", "#84CC16", "#F59E0B", "#3B82F6",
+  "#000000", "#1a1a1a", "#FF69B4", "#FF1493", "#00BFFF",
+];
+
+const SPARKLES = ["✦", "✧", "★", "✦", "✧", "✦"];
+
+const STEPS = [
+  { label: "Commande reçue",   icon: "✓", color: "#10B981" },
+  { label: "En préparation",   icon: "📦", color: "#F59E0B" },
+  { label: "En livraison",     icon: "🚚", color: "#3B82F6" },
+  { label: "Livraison prévue", icon: "📍", color: "#A855F7" },
+];
+
+export default function MerciPage() {
+  const [order, setOrder] = useState<Order | null>(null);
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [stage, setStage] = useState(0);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("lecomax_last_order");
+      if (raw) setOrder(JSON.parse(raw));
+    } catch {}
+
+    setParticles(
+      Array.from({ length: 80 }, (_, i) => ({
+        id: i,
+        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        left: (i * 1.25) % 105 - 2,
+        size: 5 + ((i * 11) % 9),
+        delay: (i * 0.033) % 2.8,
+        duration: 2.0 + ((i * 17) % 2.0),
+        shape: (["square", "circle", "diamond"] as const)[i % 3],
+      }))
+    );
+
+    const timers = [
+      setTimeout(() => setStage(1), 80),
+      setTimeout(() => setStage(2), 450),
+      setTimeout(() => setStage(3), 950),
+      setTimeout(() => setStage(4), 1350),
+      setTimeout(() => setStage(5), 1750),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  const deliveryDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 3);
+    return d.toLocaleDateString("fr-MA", { weekday: "long", day: "numeric", month: "long" });
+  }, []);
+
+  const rays = useMemo(() =>
+    Array.from({ length: 8 }, (_, i) => ({ id: i, angle: i * 45 })), []);
+
+  return (
+    <div className="min-h-screen bg-white text-neutral-900 overflow-x-hidden">
+
+      {/* ── Confetti ── */}
+      <div className="pointer-events-none fixed inset-0 z-10 overflow-hidden">
+        {stage >= 2 && particles.map((p) => (
+          <span
+            key={p.id}
+            className="absolute top-0"
+            style={{
+              left: `${p.left}%`,
+              width: p.size,
+              height: p.size,
+              backgroundColor: p.color,
+              borderRadius: p.shape === "circle" ? "50%" : "1px",
+              transform: p.shape === "diamond" ? "rotate(45deg)" : undefined,
+              animation: `confetti-fall ${p.duration}s ${p.delay}s cubic-bezier(.23,.4,.22,1) both`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* ── Ambient blobs ── */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[400px]"
+          style={{ background: "radial-gradient(ellipse, rgba(255,215,0,0.18) 0%, transparent 65%)", animation: "glow-breathe 4s ease-in-out infinite" }} />
+        <div className="absolute top-1/2 -left-40 w-[500px] h-[500px]"
+          style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.06) 0%, transparent 70%)" }} />
+        <div className="absolute top-1/2 -right-40 w-[500px] h-[500px]"
+          style={{ background: "radial-gradient(ellipse, rgba(6,182,212,0.06) 0%, transparent 70%)" }} />
+      </div>
+
+      <div className="relative z-20 flex flex-col items-center px-4 py-14 pb-28">
+
+        {/* ── Hero: Checkmark ── */}
+        <div className="relative flex items-center justify-center mb-10" style={{ width: 200, height: 200 }}>
+
+          {/* Pulsing rings */}
+          {stage >= 1 && (
+            <>
+              {[160, 178, 196].map((size, i) => (
+                <span key={size} className="absolute rounded-full border border-neutral-200"
+                  style={{ width: size, height: size, animation: `ring-pulse 2.4s ${i * 0.5}s ease-out infinite` }} />
+              ))}
+            </>
+          )}
+
+          {/* Rotating gradient ring */}
+          {stage >= 2 && (
+            <div className="absolute w-[154px] h-[154px] rounded-full"
+              style={{
+                animation: "rotate-cw 4s linear infinite", padding: 2,
+                background: "conic-gradient(from 0deg, #FFD700, #FF4500, #A855F7, #06B6D4, #10B981, #FFD700)",
+              }}>
+              <div className="w-full h-full rounded-full bg-white" />
+            </div>
+          )}
+
+          {/* Counter-rotating shimmer */}
+          {stage >= 2 && (
+            <div className="absolute w-[140px] h-[140px] rounded-full"
+              style={{
+                animation: "rotate-ccw 6s linear infinite", padding: 1,
+                background: "conic-gradient(from 180deg, transparent 60%, rgba(255,165,0,0.5) 80%, transparent 100%)",
+              }}>
+              <div className="w-full h-full rounded-full bg-transparent" />
+            </div>
+          )}
+
+          {/* Burst rays */}
+          {stage >= 2 && rays.map((ray) => (
+            <span
+              key={ray.id}
+              className="absolute bottom-1/2 left-1/2 origin-bottom"
+              style={{
+                width: 3, height: 28, marginLeft: -1.5, borderRadius: 99,
+                background: "linear-gradient(to top, #FFD700, transparent)",
+                transform: `rotate(${ray.angle}deg)`,
+                animation: `ray-burst 0.9s ${0.85 + ray.id * 0.04}s ease-out both`,
+              }}
+            />
+          ))}
+
+          {/* Sparkles */}
+          {stage >= 2 && SPARKLES.map((s, i) => (
+            <span
+              key={i}
+              className="absolute font-bold select-none"
+              style={{
+                fontSize: 10 + (i % 3) * 4,
+                color: ["#FFD700", "#A855F7", "#10B981", "#3B82F6", "#F97316", "#EC4899"][i],
+                top: `${20 + ((i * 31) % 60)}%`,
+                left: `${10 + ((i * 47) % 80)}%`,
+                animation: `sparkle-blink ${1.2 + i * 0.3}s ${i * 0.2}s ease-in-out infinite`,
+              }}
+            >
+              {s}
+            </span>
+          ))}
+
+          {/* Main circle */}
+          <div
+            className="relative z-10 w-32 h-32 rounded-full flex items-center justify-center bg-white"
+            style={{
+              boxShadow: stage >= 2
+                ? "0 0 0 1px rgba(0,0,0,0.06), 0 8px 40px rgba(255,215,0,0.25), 0 2px 12px rgba(0,0,0,0.08)"
+                : "0 0 0 1px rgba(0,0,0,0.06)",
+              animation: stage >= 2 ? "pop-scale 0.7s cubic-bezier(.34,1.56,.64,1) both" : "none",
+            }}
+          >
+            <svg width="58" height="58" viewBox="0 0 58 58" fill="none">
+              <defs>
+                <linearGradient id="cg" x1="0" y1="0" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#FFD700" />
+                  <stop offset="50%" stopColor="#FF8C00" />
+                  <stop offset="100%" stopColor="#10B981" />
+                </linearGradient>
+              </defs>
+              <circle cx="29" cy="29" r="26" stroke="url(#cg)" strokeWidth="2" fill="none"
+                strokeDasharray="163.4" strokeDashoffset={stage >= 2 ? "0" : "163.4"}
+                style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1) 0.1s" }} />
+              <path d="M16 29 L24 37 L42 19" stroke="#111" strokeWidth="3.5"
+                strokeLinecap="round" strokeLinejoin="round" fill="none"
+                strokeDasharray="42" strokeDashoffset={stage >= 2 ? "0" : "42"}
+                style={{ transition: "stroke-dashoffset 0.55s cubic-bezier(.4,0,.2,1) 0.75s" }} />
+            </svg>
+          </div>
+        </div>
+
+        {/* ── Heading ── */}
+        {stage >= 3 && (
+          <div className="text-center mb-8" style={{ animation: "fade-up 0.6s ease both" }}>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" style={{ animation: "glow-breathe 1.5s ease-in-out infinite" }} />
+              <span className="text-emerald-700 text-[10px] font-black uppercase tracking-[0.14em]">Commande confirmée</span>
+            </div>
+            <h1 className="text-4xl font-black uppercase tracking-tight leading-none mb-3 text-neutral-900">
+              Merci pour<br />votre commande
+            </h1>
+            <p className="text-4xl">🎉</p>
+            {order && (
+              <p className="text-neutral-500 text-sm mt-2 font-medium">
+                Bonjour <span className="text-neutral-900 font-bold">{order.customer.prenom} {order.customer.nom}</span>,<br />
+                votre commande a bien été enregistrée.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ── Order card ── */}
+        {stage >= 4 && order && (
+          <div className="w-full max-w-md mb-5" style={{ animation: "fade-up 0.6s 0.05s ease both" }}>
+            <div className="rounded-2xl p-px"
+              style={{ background: "linear-gradient(135deg, #FFD700 0%, #A855F7 50%, #06B6D4 100%)" }}>
+              <div className="rounded-[15px] bg-white overflow-hidden">
+                <div className="px-5 py-4 flex items-center justify-between border-b border-neutral-100">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">N° Commande</p>
+                    <p className="font-black text-lg tracking-wider text-neutral-900 mt-0.5"
+                      style={{ animation: "count-up-reveal 0.5s 0.3s ease both", opacity: 0 }}>
+                      {order.number}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400">Total</p>
+                    <p className="font-black text-lg text-neutral-900 mt-0.5"
+                      style={{ animation: "count-up-reveal 0.5s 0.45s ease both", opacity: 0 }}>
+                      {formatMAD(order.total)}
+                    </p>
+                  </div>
+                </div>
+
+                <ul className="divide-y divide-neutral-50">
+                  {order.items.slice(0, 3).map((item) => (
+                    <li key={item.slug + item.size} className="flex items-center gap-3 px-5 py-3">
+                      <div className="relative w-11 h-[52px] rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200">
+                        <Image src={item.image} alt={item.name} fill sizes="44px" className="object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-semibold leading-tight truncate text-neutral-800">{item.name}</p>
+                        <p className="text-[10px] text-neutral-400 mt-0.5">{item.size} · ×{item.quantity}</p>
+                      </div>
+                      <span className="text-[12px] font-bold text-neutral-700 shrink-0 tabular-nums">{formatMAD(item.price * item.quantity)}</span>
+                    </li>
+                  ))}
+                  {order.items.length > 3 && (
+                    <li className="px-5 py-2 text-center text-[11px] text-neutral-400">
+                      +{order.items.length - 3} autre{order.items.length - 3 > 1 ? "s" : ""} article{order.items.length - 3 > 1 ? "s" : ""}
+                    </li>
+                  )}
+                </ul>
+
+                <div className="px-5 py-3 border-t border-neutral-100 flex items-center gap-2">
+                  <span className="text-base">{order.payment === "livraison" ? "💵" : "💳"}</span>
+                  <span className="text-xs text-neutral-500">{order.payment === "livraison" ? "Paiement à la livraison" : "Carte bancaire"}</span>
+                  {order.shipping === 0 && (
+                    <span className="ml-auto text-[10px] text-emerald-600 font-bold">✓ Livraison gratuite</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Timeline ── */}
+        {stage >= 5 && (
+          <div className="w-full max-w-md mb-5" style={{ animation: "fade-up 0.6s 0.05s ease both" }}>
+
+            {/* Delivery date banner */}
+            <div className="rounded-2xl mb-3 px-5 py-4 flex items-center gap-4"
+              style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)", border: "1.5px solid #86efac" }}>
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-xl"
+                style={{ background: "linear-gradient(135deg, #10B981 0%, #059669 100%)", boxShadow: "0 4px 12px rgba(16,185,129,0.3)" }}>
+                🚚
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-emerald-600 mb-0.5">Livraison estimée</p>
+                <p className="font-black text-[15px] text-neutral-900 capitalize leading-tight">{deliveryDate}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-[10px] font-bold text-emerald-500 bg-emerald-100 px-2 py-1 rounded-full">2–5 jours</p>
+              </div>
+            </div>
+
+            {/* Vertical step list */}
+            <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
+              <div className="px-5 pt-4 pb-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">Suivi de commande</p>
+              </div>
+              <div className="px-5 py-4 space-y-0">
+                {STEPS.map((step, i) => {
+                  const isActive = i === 0;
+                  const isDone = i === 0;
+                  const isLast = i === STEPS.length - 1;
+                  return (
+                    <div key={i} className="flex gap-4">
+                      {/* Left: icon + connector line */}
+                      <div className="flex flex-col items-center shrink-0" style={{ width: 36 }}>
+                        <div
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 z-10"
+                          style={{
+                            background: isDone
+                              ? `linear-gradient(135deg, ${step.color} 0%, ${step.color}cc 100%)`
+                              : "#f5f5f5",
+                            border: isActive ? `2px solid ${step.color}` : "2px solid #e5e7eb",
+                            boxShadow: isActive ? `0 0 0 4px ${step.color}18, 0 4px 12px ${step.color}30` : "none",
+                            color: isDone ? "#fff" : "#d1d5db",
+                            animation: isActive ? "glow-breathe 2s ease-in-out infinite" : "none",
+                            fontSize: isDone ? 14 : 18,
+                          }}
+                        >
+                          {isDone ? "✓" : step.icon}
+                        </div>
+                        {!isLast && (
+                          <div className="flex-1 w-[2px] my-1 rounded-full"
+                            style={{
+                              background: isDone ? `linear-gradient(to bottom, ${step.color}60, #e5e7eb)` : "#e5e7eb",
+                              minHeight: 20,
+                            }} />
+                        )}
+                      </div>
+                      {/* Right: text */}
+                      <div className={`flex-1 flex items-start justify-between pb-${isLast ? "0" : "4"}`}
+                        style={{ paddingBottom: isLast ? 0 : 16 }}>
+                        <div>
+                          <p className="font-bold text-[13px] leading-tight"
+                            style={{ color: isActive ? "#111" : "#9ca3af" }}>
+                            {step.label}
+                          </p>
+                          <p className="text-[11px] mt-0.5"
+                            style={{ color: isActive ? step.color : "#d1d5db" }}>
+                            {i === 0 && "Votre commande est confirmée"}
+                            {i === 1 && "En attente de traitement"}
+                            {i === 2 && "Votre colis sera envoyé"}
+                            {i === 3 && <span className="capitalize font-semibold">{deliveryDate}</span>}
+                          </p>
+                        </div>
+                        {isActive && (
+                          <span className="text-[9px] font-black uppercase tracking-wide px-2 py-1 rounded-full shrink-0"
+                            style={{ background: `${step.color}15`, color: step.color }}>
+                            En cours
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Info grid ── */}
+        {stage >= 5 && order && (
+          <div className="w-full max-w-md mb-8 grid grid-cols-2 gap-3" style={{ animation: "fade-up 0.6s 0.1s ease both" }}>
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+              <p className="text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400 mb-1">Destination</p>
+              <p className="text-sm font-bold text-neutral-900 capitalize">{order.customer.ville || "—"}</p>
+              <p className="text-[11px] text-neutral-400 mt-0.5">Maroc 🇲🇦</p>
+            </div>
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 min-w-0">
+              <p className="text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400 mb-1">Confirmation</p>
+              <p className="text-[11px] font-semibold text-neutral-900 truncate">{order.customer.email || "—"}</p>
+              <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Email envoyé ✓</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── CTAs ── */}
+        {stage >= 5 && (
+          <div className="w-full max-w-md flex flex-col gap-3" style={{ animation: "fade-up 0.6s 0.15s ease both" }}>
+            <Link
+              href="/"
+              className="w-full py-4 rounded-2xl font-black uppercase text-sm tracking-[0.1em] text-center text-white transition-all duration-200 active:scale-[0.97]"
+              style={{
+                background: "linear-gradient(135deg, #111 0%, #333 100%)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.12)",
+              }}
+            >
+              Continuer mes achats →
+            </Link>
+            <Link
+              href="/suivre-commande"
+              className="w-full py-3.5 rounded-2xl font-bold uppercase text-sm tracking-[0.08em] text-center border-2 border-neutral-200 text-neutral-600 hover:border-neutral-400 hover:text-neutral-900 transition-all duration-200 active:scale-[0.97]"
+            >
+              Suivre ma commande
+            </Link>
+          </div>
+        )}
+
+        {stage >= 5 && (
+          <p className="mt-10 text-[10px] text-neutral-300 font-black uppercase tracking-[0.25em]"
+            style={{ animation: "fade-up 0.6s 0.2s ease both" }}>
+            L&apos;ecomax · Maroc
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}

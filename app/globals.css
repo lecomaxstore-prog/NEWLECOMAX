@@ -1,0 +1,207 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Helvetica Neue", Arial, sans-serif;
+}
+
+html,
+body {
+  background: #fff;
+  color: #000;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Premium display headings */
+.h-display {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.92;
+}
+
+/* Marquee bar */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: inline-flex;
+  gap: 3rem;
+  white-space: nowrap;
+  animation: marquee 28s linear infinite;
+}
+
+/* Hide scrollbar for horizontal rails */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* ── Cart attention animations ─────────────────────────────────── */
+@keyframes cart-wobble {
+  0%          { transform: rotate(0deg) scale(1); }
+  10%         { transform: rotate(-14deg) scale(1.15); }
+  20%         { transform: rotate(12deg) scale(1.1); }
+  30%         { transform: rotate(-10deg) scale(1.05); }
+  40%         { transform: rotate(8deg); }
+  50%         { transform: rotate(-6deg); }
+  60%         { transform: rotate(4deg); }
+  70%         { transform: rotate(-2deg); }
+  80%, 100%   { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes badge-pop {
+  0%, 60%  { transform: scale(1); }
+  70%      { transform: scale(1.6); }
+  80%      { transform: scale(0.9); }
+  90%      { transform: scale(1.2); }
+  100%     { transform: scale(1); }
+}
+
+/* ── Checkout & Order confirmation animations ───────────────────── */
+@keyframes check-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes ring-pulse {
+  0%   { transform: scale(0.95); opacity: 0.5; }
+  100% { transform: scale(1.9);  opacity: 0; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pop-scale {
+  0%   { transform: scale(0) rotate(-8deg); opacity: 0; }
+  65%  { transform: scale(1.12) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes confetti-fall {
+  0%   { transform: translateY(-30px) rotate(0deg) scale(1); opacity: 1; }
+  80%  { opacity: 0.9; }
+  100% { transform: translateY(110vh) rotate(680deg) scale(0.3); opacity: 0; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes input-focus-in {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes rotate-cw {
+  to { transform: rotate(360deg); }
+}
+@keyframes rotate-ccw {
+  to { transform: rotate(-360deg); }
+}
+@keyframes ray-burst {
+  0%   { transform: scaleY(0) translateY(0); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: scaleY(1) translateY(-48px); opacity: 0; }
+}
+@keyframes float-up-fade {
+  0%   { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-80px) scale(0.4); opacity: 0; }
+}
+@keyframes sparkle-blink {
+  0%, 100% { transform: scale(1) rotate(0deg);   opacity: 0.9; }
+  50%       { transform: scale(0.25) rotate(90deg); opacity: 0.1; }
+}
+@keyframes slide-in-right {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+@keyframes bounce-truck {
+  0%, 100% { transform: translateX(0); }
+  50%       { transform: translateX(5px); }
+}
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}
+@keyframes count-up-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.cart-bag-icon {
+  display: inline-block;
+  animation: cart-wobble 3s ease-in-out 1.5s infinite;
+  transform-origin: top center;
+}
+
+.cart-badge {
+  animation: badge-pop 3s ease-in-out 1.5s infinite;
+  transform-origin: center;
+}
+
+/* ── Hero entrance animations ───────────────────────────────────── */
+@keyframes hero-fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes hero-line-in {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes hero-ken-burns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.06); }
+}
+
+.hero-image {
+  animation: hero-ken-burns 10s ease-out forwards;
+}
+.hero-eyebrow  { animation: hero-fade-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.2s both; }
+.hero-headline { animation: hero-fade-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.38s both; }
+.hero-sub      { animation: hero-fade-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.52s both; }
+.hero-ctas     { animation: hero-fade-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.66s both; }
+.hero-divider  {
+  display: block;
+  height: 2px;
+  background: white;
+  transform-origin: left;
+  animation: hero-line-in 0.6s cubic-bezier(0.22,1,0.36,1) 0.3s both;
+}
+
+/* ── Logo animations ──────────────────────────────────────────────── */
+@keyframes logo-bar-in {
+  from { opacity: 0; transform: translateY(9px); }
+  65%  { transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes logo-text-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes logo-sweep {
+  0%, 70%  { transform: translateX(-100%) skewX(-18deg); opacity: 0; }
+  73%      { opacity: 1; }
+  90%      { transform: translateX(500%) skewX(-18deg); opacity: 0; }
+  100%     { transform: translateX(500%) skewX(-18deg); opacity: 0; }
+}
+
+/* ── Trust badge pulse ──────────────────────────────────────────── */
+@keyframes trust-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Logo animations ──────────────────────────────────── */
+@keyframes logo-bar-in {
+  from { opacity: 0; transform: translateY(9px); }
+  65%  { transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes logo-text-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes logo-sweep {
+  0%, 70%  { transform: translateX(-100%) skewX(-18deg); opacity: 0; }
+  73%      { opacity: 1; }
+  90%      { transform: translateX(500%) skewX(-18deg); opacity: 0; }
+  100%     { transform: translateX(500%) skewX(-18deg); opacity: 0; }
+}
