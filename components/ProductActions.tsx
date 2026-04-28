@@ -7,6 +7,21 @@ import { useProductColor } from "./ProductColorContext";
 import SizeGuideModal from "./SizeGuideModal";
 import type { Product } from "@/lib/products";
 
+const colorMap: Record<string, string> = {
+  "Noir": "#0a0a0a", "Blanc": "#f5f5f5", "Blanc casse": "#fafaf5",
+  "Gris": "#9ca3af", "Gris chine": "#d1d5db", "Gris fonce": "#4b5563",
+  "Gris anthracite": "#374151", "Bleu": "#3b82f6", "Bleu marine": "#1e3a5f",
+  "Bleu nuit": "#1e2a4a", "Bleu ciel": "#7dd3fc", "Navy": "#1e3a5f",
+  "Rouge": "#dc2626", "Bordeaux": "#7c1035", "Rose": "#f9a8d4",
+  "Rose poudre": "#fcd5ce", "Corail": "#fb7185", "Vert": "#22c55e",
+  "Vert militaire": "#4a5c3a", "Vert sauge": "#7c9a6f", "Kaki": "#8b7355",
+  "Caramel": "#d4a574", "Beige": "#f5f0e8", "Champagne": "#f7e7ce",
+  "Lilas": "#c4b5fd", "Mauve": "#a78bfa", "Violet": "#8b5cf6",
+  "Marine": "#1e3a5f", "Jaune": "#facc15",
+};
+const getColorHex = (name: string) =>
+  colorMap[name.split("/")[0].trim()] ?? "#e5e7eb";
+
 function getSizeLabel(subCategory: string): string {
   const sub = subCategory.toLowerCase();
   if (sub === "running" || sub === "lifestyle" || sub.includes("sneaker") || sub.includes("chaussure") || sub.includes("basket")) return "Pointure";
@@ -15,7 +30,9 @@ function getSizeLabel(subCategory: string): string {
 }
 
 export default function ProductActions({ product }: { product: Product }) {
-  const { color } = useProductColor();
+  const { color, setColor } = useProductColor();
+  const hasColors = product.colors.length > 0 && product.colors[0] !== "Taille unique";
+  const hasColorImages = !!(product.colorImages);
   const availableSizes = (product.colorSizes && color && product.colorSizes[color])
     ? product.colorSizes[color]
     : product.sizes;
@@ -45,9 +62,9 @@ export default function ProductActions({ product }: { product: Product }) {
       return;
     }
     setError(null);
-    add(product, size, 1);
+    add(product, size, 1, color);
     if (goToCart) {
-      router.push("/panier");
+      router.push("/checkout");
     } else {
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
@@ -56,6 +73,30 @@ export default function ProductActions({ product }: { product: Product }) {
 
   return (
     <div>
+      {/* Color picker — above size selector */}
+      {hasColors && (
+        <div className="mb-5">
+          <p className="text-[12px] font-black uppercase tracking-wide mb-2">
+            Couleur — <span className="font-normal text-neutral-500">{color}</span>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {product.colors.map((c) => (
+              <button
+                key={c}
+                title={c}
+                onClick={() => setColor(c)}
+                className={`w-9 h-9 border-2 transition-colors ring-1 ring-neutral-200 ${
+                  color === c
+                    ? "border-black scale-110"
+                    : "border-transparent hover:border-neutral-400"
+                }`}
+                style={{ backgroundColor: getColorHex(c) }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Size selector — hidden for single-size items */}
       {!isSingleSize && (
         <>

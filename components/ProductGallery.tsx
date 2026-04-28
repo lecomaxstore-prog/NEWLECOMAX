@@ -60,10 +60,19 @@ export default function ProductGallery({
     }
   };
 
+  // Sync gallery image when color changes via ProductActions color picker
+  useEffect(() => {
+    if (!hasColorPicker || !selectedColor) return;
+    if (colorImages?.[selectedColor]) {
+      const idx = images.indexOf(colorImages[selectedColor]);
+      if (idx >= 0) setActive(idx);
+    }
+  }, [selectedColor]);
+
   return (
     <div className="flex flex-col gap-3">
       {/* Main view */}
-      <div className="relative aspect-[4/5] bg-neutral-100 overflow-hidden group">
+      <div className="relative aspect-square bg-neutral-100 overflow-hidden group">
         {active === "video" && video ? (
           <video
             key={video}
@@ -127,31 +136,6 @@ export default function ProductGallery({
 
 
       </div>
-
-      {/* Interactive color picker (only when colorImages provided) */}
-      {hasColorPicker && (
-        <div className="mt-1">
-          <p className="text-[12px] font-black uppercase tracking-wide mb-2">
-            Couleur —{" "}
-            <span className="font-normal text-neutral-500">{selectedColor}</span>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {colors!.map((c) => (
-              <button
-                key={c}
-                title={c}
-                onClick={() => handleColorClick(c)}
-                className={`w-9 h-9 border-2 transition-colors ring-1 ring-neutral-200 ${
-                  selectedColor === c
-                    ? "border-black scale-110"
-                    : "border-transparent hover:border-neutral-400"
-                }`}
-                style={{ backgroundColor: getColorHex(c) }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

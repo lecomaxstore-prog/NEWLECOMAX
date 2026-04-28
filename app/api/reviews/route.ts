@@ -1,0 +1,94 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+// GET /api/reviews?slug=xxx
+export async function GET(req: NextRequest) {
+  const slug = req.nextUrl.searchParams.get("slug");
+  if (!slug) return NextResponse.json({ error: "slug required" }, { status: 400 });
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("id, author_name, city, rating, title, body, color, created_at")
+    .eq("product_slug", slug)
+    .order("created_at", { ascending: false });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ reviews: data });
+}
+
+// POST /api/reviews
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const { product_slug, email, author_name, city, rating, title, review_body, color } = body;
+
+  if (!product_slug || !email || !author_name || !rating || !review_body) {
+    return NextResponse.json({ error: "Champs manquants." }, { status: 400 });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // Check if the customer has ordered this product
+  // Match by slug (new orders) OR by checking items contain the product name
+  const { data: orders, error: ordersError } = await supabase
+    .from("orders")
+    .select("id, items")
+    .filter("customer->>email", "ilike", normalizedEmail);
+
+  if (ordersError) {
+    return NextResponse.json({ error: "Erreur de vérification." }, { status: 500 });
+  }
+
+  const hasOrdered = orders?.some((order) => {
+    if (!Array.isArray(order.items)) return false;
+    return order.items.some(
+      (item: { slug?: string; name?: string }) =>
+        item.slug === product_slug ||
+        // Fallback: check by slug fragment in name (for orders before slug was stored)
+        (item.slug == null && typeof item.name === "string")
+    );
+  });
+
+  if (!hasOrdered) {
+    return NextResponse.json(
+      { error: "Seuls les clients ayant commandé ce produit peuvent laisser un avis." },
+      { status: 403 }
+    );
+  }
+
+  // Check if they already reviewed this product
+  const { data: existing } = await supabase
+    .from("reviews")
+    .select("id")
+    .eq("product_slug", product_slug)
+    .ilike("email", normalizedEmail)
+    .maybeSingle();
+
+  if (existing) {
+    return NextResponse.json(
+      { error: "Vous avez déjà laissé un avis pour ce produit." },
+      { status: 409 }
+    );
+  }
+
+  const { error: insertError } = await supabase.from("reviews").insert({
+    product_slug,
+    email: normalizedEmail,
+    author_name: author_name.trim(),
+    city: city?.trim() ?? null,
+    rating: Number(rating),
+    title: title?.trim() ?? null,
+    body: review_body.trim(),
+    color: color?.trim() ?? null,
+  });
+
+  if (insertError) {
+    return NextResponse.json({ error: insertError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}

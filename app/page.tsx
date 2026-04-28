@@ -7,11 +7,7 @@ import Link from "next/link";
 import { products } from "@/lib/products";
 
 export default function HomePage() {
-  const baasploa = products.find((p) => p.slug === "c-baasploa-course-homme");
-  const newArrivals = [
-    ...(baasploa ? [baasploa] : []),
-    ...products.filter((p) => p.badge === "Nouveau" && p.slug !== "c-baasploa-course-homme"),
-  ];
+  const newArrivals = products.filter((p) => p.badge === "Nouveau");
   const bestSellers = products.filter((p) => p.badge === "Bestseller");
   const onSale = products.filter((p) => p.oldPrice);
 
@@ -84,7 +80,7 @@ export default function HomePage() {
       <ProductRail
         title="Bestsellers"
         products={bestSellers}
-        cta={{ label: "Tout voir", href: "/homme" }}
+        cta={{ label: "Tout voir", href: "/bestsellers" }}
       />
 
       {/* ── Promo strip ─────────────────────────────────────────── */}

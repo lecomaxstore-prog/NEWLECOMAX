@@ -15,6 +15,7 @@ export type CartItem = {
   image: string;
   price: number;
   size: string;
+  color: string;
   quantity: number;
 };
 
@@ -22,7 +23,7 @@ type CartCtx = {
   items: CartItem[];
   count: number;
   total: number;
-  add: (p: Product, size: string, qty?: number) => void;
+  add: (p: Product, size: string, qty?: number, color?: string) => void;
   remove: (slug: string, size: string) => void;
   setQty: (slug: string, size: string, qty: number) => void;
   clear: () => void;
@@ -53,10 +54,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       items,
       count: items.reduce((s, i) => s + i.quantity, 0),
       total: items.reduce((s, i) => s + i.quantity * i.price, 0),
-      add: (p, size, qty = 1) =>
+      add: (p, size, qty = 1, color = "") =>
         setItems((prev) => {
           const idx = prev.findIndex(
-            (i) => i.slug === p.slug && i.size === size
+            (i) => i.slug === p.slug && i.size === size && i.color === color
           );
           if (idx >= 0) {
             const next = [...prev];
@@ -71,6 +72,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               image: p.image,
               price: p.price,
               size,
+              color,
               quantity: qty,
             },
           ];

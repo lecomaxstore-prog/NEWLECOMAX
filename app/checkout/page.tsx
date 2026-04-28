@@ -6,6 +6,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/components/CartContext";
 import { formatMAD } from "@/lib/products";
+import { supabase } from "@/lib/supabase";
+import emailjs from "@emailjs/browser";
 
 type Field = {
   prenom: string; nom: string; email: string; telephone: string;
@@ -96,7 +98,8 @@ export default function CheckoutPage() {
     const e: Partial<Field> = {};
     if (!form.prenom.trim()) e.prenom = "Requis";
     if (!form.nom.trim()) e.nom = "Requis";
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email invalide";
+    if (!form.email.trim()) e.email = "Requis";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email invalide";
     if (!/^[0-9+\s\-()]{8,15}$/.test(form.telephone)) e.telephone = "Numéro invalide";
     if (!form.adresse.trim()) e.adresse = "Requis";
     if (!form.ville.trim()) e.ville = "Requis";
@@ -112,9 +115,41 @@ export default function CheckoutPage() {
     const number = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const orderLines = items
-      .map((i) => `• ${i.name} (Taille: ${i.size}) × ${i.quantity} = ${formatMAD(i.price * i.quantity)}`)
+      .map((i) => `• ${i.name}${i.color ? ` — ${i.color}` : ""} (Taille: ${i.size}) × ${i.quantity} = ${formatMAD(i.price * i.quantity)}`)
       .join("\n");
 
+    // Save order to Supabase
+    try {
+      const { error: dbErr } = await supabase.from("orders").insert({
+        order_number: number,
+        customer: {
+          name: `${form.prenom} ${form.nom}`,
+          phone: form.telephone,
+          email: form.email,
+          city: form.ville,
+          address: `${form.adresse}${form.codePostal ? ", " + form.codePostal : ""}`,
+        },
+        items: items.map((i) => ({
+          slug: i.slug,
+          name: i.name,
+          price: i.price,
+          qty: i.quantity,
+          image: i.image ?? "",
+          size: i.size ?? "",
+          color: i.color ?? "",
+        })),
+        total: grandTotal,
+        payment_method: payment === "livraison" ? "Paiement à la livraison" : "Carte bancaire",
+        status: "pending",
+        tracking_number: null,
+        notes: null,
+      });
+      if (dbErr) console.error("Supabase insert error:", dbErr);
+    } catch (err) {
+      console.error("Supabase save failed:", err);
+    }
+
+    // Also send email notification to admin
     try {
       await fetch("https://formspree.io/f/xvzdjpee", {
         method: "POST",
@@ -135,7 +170,55 @@ export default function CheckoutPage() {
         }),
       });
     } catch {
-      // Continue even if email fails — still save order locally
+      // Continue even if email fails
+    }
+
+    // Send confirmation email to customer via EmailJS
+    if (form.email && process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID) {
+      try {
+        await emailjs.send(
+          process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
+          process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
+          {
+            to_email: form.email,
+            to_name: form.prenom,
+            order_number: number,
+            order_items: orderLines,
+            order_total: formatMAD(grandTotal),
+            shipping: shipping === 0 ? "Gratuite" : formatMAD(shipping),
+            payment_method: payment === "livraison" ? "Paiement à la livraison" : "Carte bancaire",
+            delivery_city: form.ville,
+          },
+          process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!,
+        );
+      } catch {
+        // Continue even if customer email fails
+      }
+    }
+
+    // Send automatic confirmation email to customer via Resend
+    if (form.email) {
+      try {
+        const emailRes = await fetch("/api/send-confirmation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to_email: form.email,
+            to_name: form.prenom,
+            order_number: number,
+            order_items: orderLines,
+            order_total: formatMAD(grandTotal),
+            shipping: shipping === 0 ? "Gratuite" : formatMAD(shipping),
+            payment_method: payment === "livraison" ? "Paiement à la livraison" : "Carte bancaire",
+            delivery_city: form.ville,
+          }),
+        });
+        const emailData = await emailRes.json();
+        if (!emailRes.ok) console.error("Email error:", emailData);
+        else console.log("Confirmation email sent to", form.email);
+      } catch (err) {
+        console.error("Email fetch failed:", err);
+      }
     }
 
     localStorage.setItem(

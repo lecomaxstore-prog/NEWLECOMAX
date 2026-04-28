@@ -3,7 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(url, key);
+export const supabase = createClient(url, key, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -38,10 +44,12 @@ export type Order = {
     qty: number;
     image: string;
     size?: string;
+    color?: string;
   }[];
   total: number;
   payment_method: string;
   status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+  tracking_number: string | null;
   notes: string | null;
   created_at: string;
 };

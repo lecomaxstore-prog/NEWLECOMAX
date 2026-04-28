@@ -1,8 +1,25 @@
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { formatMAD, type Product } from "@/lib/products";
 
+const COLOR_MAP: Record<string, string> = {
+  "Noir": "#0a0a0a", "Blanc": "#f5f5f5", "Blanc casse": "#fafaf5",
+  "Gris": "#9ca3af", "Gris chine": "#d1d5db", "Gris fonce": "#4b5563",
+  "Gris anthracite": "#374151", "Bleu": "#3b82f6", "Bleu marine": "#1e3a5f",
+  "Bleu nuit": "#1e2a4a", "Bleu ciel": "#7dd3fc", "Navy": "#1e3a5f",
+  "Rouge": "#dc2626", "Bordeaux": "#7c1035", "Rose": "#f9a8d4",
+  "Rose poudre": "#fcd5ce", "Corail": "#fb7185", "Vert": "#22c55e",
+  "Vert militaire": "#4a5c3a", "Vert sauge": "#7c9a6f", "Kaki": "#8b7355",
+  "Caramel": "#d4a574", "Beige": "#f5f0e8", "Champagne": "#f7e7ce",
+  "Lilas": "#c4b5fd", "Mauve": "#a78bfa", "Violet": "#8b5cf6",
+  "Marine": "#1e3a5f", "Jaune": "#facc15", "Jaune citron": "#fef08a",
+  "Orange": "#f97316",
+};
+const getColor = (name: string) => COLOR_MAP[name.split("/")[0].trim()] ?? "#e5e7eb";
+
 export default function ProductCard({ product }: { product: Product }) {
+  const [wished, setWished] = useState(false);
   const onSale = product.oldPrice && product.oldPrice > product.price;
   const discount = onSale
     ? Math.round((1 - product.price / product.oldPrice!) * 100)
@@ -11,7 +28,7 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
     <Link
       href={`/produit/${product.slug}`}
-      className="group block bg-white"
+      className="group block bg-white border border-neutral-100 hover:border-neutral-300 hover:shadow-[0_4px_24px_rgba(0,0,0,0.07)] transition-all duration-300 overflow-hidden"
     >
       {/* Image container */}
       <div className="relative aspect-[4/5] bg-neutral-50 overflow-hidden">
@@ -27,7 +44,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/8 transition-colors duration-500" />
 
         {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1">
+        <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
           {product.badge && (
             <span
               className={`text-[10px] font-black uppercase px-2.5 py-[5px] tracking-[0.12em] leading-none ${
@@ -50,6 +67,19 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
         </div>
 
+        {/* Wishlist button */}
+        <button
+          onClick={(e) => { e.preventDefault(); setWished((w) => !w); }}
+          aria-label={wished ? "Retirer des favoris" : "Ajouter aux favoris"}
+          className={`absolute top-2.5 left-2.5 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200
+            opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0
+            ${wished ? "bg-black text-white" : "bg-white/90 text-neutral-600 hover:bg-black hover:text-white"}`}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill={wished ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+
         {/* Quick-view hover bar */}
         <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] py-3 text-center flex items-center justify-center gap-2">
           Voir le produit
@@ -58,14 +88,15 @@ export default function ProductCard({ product }: { product: Product }) {
       </div>
 
       {/* Info */}
-      <div className="pt-3.5 pb-5">
+      <div className="px-3 pt-3 pb-4">
         {/* Color swatches */}
         {product.colors.length > 0 && (
-          <div className="flex items-center gap-[5px] mb-2.5">
+          <div className="flex items-center gap-[5px] mb-2">
             {product.colors.slice(0, 5).map((c, i) => (
               <span
                 key={i}
-                className="w-[9px] h-[9px] rounded-full ring-1 ring-neutral-200 ring-offset-1 bg-neutral-400 shrink-0"
+                className="w-[9px] h-[9px] rounded-full ring-1 ring-black/10 ring-offset-1 shrink-0"
+                style={{ backgroundColor: getColor(c) }}
                 title={c}
               />
             ))}
@@ -75,18 +106,18 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
         )}
 
-        <h3 className="font-bold text-[13.5px] leading-snug line-clamp-2 text-black group-hover:text-neutral-600 transition-colors duration-200">
+        <h3 className="font-bold text-[13px] leading-snug line-clamp-2 text-black group-hover:text-neutral-600 transition-colors duration-200">
           {product.name}
         </h3>
-        <p className="text-neutral-400 text-[11.5px] mt-0.5 uppercase tracking-wide font-medium">{product.subCategory}</p>
+        <p className="text-neutral-400 text-[10.5px] mt-0.5 uppercase tracking-wider font-semibold">{product.subCategory}</p>
 
         {/* Price row */}
-        <div className="flex items-baseline gap-2 mt-2.5">
-          <span className={`font-black text-[14.5px] ${onSale ? "text-red-600" : "text-black"}`}>
+        <div className="flex items-baseline gap-2 mt-2">
+          <span className={`font-black text-[14px] ${onSale ? "text-red-600" : "text-black"}`}>
             {formatMAD(product.price)}
           </span>
           {onSale && (
-            <span className="text-neutral-400 line-through text-[12.5px]">
+            <span className="text-neutral-400 line-through text-[12px]">
               {formatMAD(product.oldPrice!)}
             </span>
           )}

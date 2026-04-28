@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "./CartContext";
 import { categories } from "@/lib/products";
 import Logo from "./Logo";
@@ -17,9 +17,16 @@ export default function Header() {
   const { count } = useCart();
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-40 bg-white shadow-[0_1px_0_0_#e5e5e5]">
+    <header className={`sticky top-0 z-40 bg-white/95 backdrop-blur-md transition-shadow duration-200 ${scrolled ? "shadow-[0_1px_12px_0_rgba(0,0,0,0.08)]" : "shadow-[0_1px_0_0_#e5e5e5]"}`}>
       {/* ── Top utility bar ─────────────────────────────────────── */}
       <div className="hidden md:block bg-neutral-950">
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-9">
@@ -59,9 +66,9 @@ export default function Header() {
             className="md:hidden p-2 -ml-1"
             onClick={() => setOpen((o) => !o)}
           >
-            <span className="block w-[22px] h-[2px] bg-black mb-[5px] transition-all" />
-            <span className="block w-[22px] h-[2px] bg-black mb-[5px] transition-all" />
-            <span className="block w-[16px] h-[2px] bg-black transition-all" />
+            <span className={`block w-[22px] h-[2px] bg-black transition-all duration-300 origin-center ${open ? "rotate-45 translate-y-[7px]" : "mb-[5px]"}`} />
+            <span className={`block w-[22px] h-[2px] bg-black transition-all duration-300 ${open ? "opacity-0 scale-x-0" : "mb-[5px]"}`} />
+            <span className={`block h-[2px] bg-black transition-all duration-300 origin-center ${open ? "-rotate-45 w-[22px] -translate-y-[7px]" : "w-[16px]"}`} />
           </button>
 
           <Link href="/" aria-label="L'ecomax — Accueil" className="flex items-center gap-3">
@@ -124,6 +131,15 @@ export default function Header() {
               </button>
             )}
           </div>
+
+          {/* Mobile search */}
+          <button
+            aria-label="Recherche"
+            onClick={() => setOpen((o) => { if (!o) setTimeout(() => document.querySelector<HTMLInputElement>('[placeholder="Rechercher un produit..."]')?.focus(), 50); return !o; })}
+            className="md:hidden p-2 rounded-full hover:bg-neutral-100 transition-colors text-neutral-600 hover:text-black"
+          >
+            <SearchIcon />
+          </button>
 
           <IconBtn href="/connexion" label="Mon compte">
             <UserIcon />

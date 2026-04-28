@@ -6,6 +6,8 @@ import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
 import { ProductColorProvider } from "@/components/ProductColorContext";
 import ProductCarousel from "@/components/ProductCarousel";
+import ReviewSection from "@/components/ReviewSection";
+import ProductAccordion from "@/components/ProductAccordion";
 
 export function generateStaticParams() {
   return products.map((p) => ({ slug: p.slug }));
@@ -155,7 +157,7 @@ export default async function ProductPage({
       </nav>
 
       <ProductColorProvider defaultColor={product.colors[0] ?? ""}>
-      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-10 lg:gap-16">
+      <div className="grid lg:grid-cols-[1fr_1fr] gap-8 lg:gap-12">
 
         {/* ── Gallery ── */}
         <ProductGallery
@@ -178,18 +180,6 @@ export default async function ProductPage({
           <h1 className="h-display text-3xl md:text-[2.2rem] leading-[1.05]">
             {product.name}
           </h1>
-
-          {/* Rating */}
-          <div className="flex items-center gap-2 mt-3">
-            <div className="flex gap-0.5">
-              {[1,2,3,4,5].map((s) => (
-                <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill={s <= 4 ? "#0a0a0a" : "none"} stroke="#0a0a0a" strokeWidth="1.5">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                </svg>
-              ))}
-            </div>
-            <span className="text-[12px] text-neutral-500">4.0 · 38 avis</span>
-          </div>
 
           {/* Price */}
           <div className="flex items-baseline gap-3 mt-5">
@@ -237,8 +227,7 @@ export default async function ProductPage({
 
           <div className="w-full h-px bg-neutral-100 my-6" />
 
-          {/* Delivery badges */}
-          <div className="grid grid-cols-2 gap-2 mb-6">
+          {/* Delivery badges */}          <div className="grid grid-cols-2 gap-2 mb-6">
             <div className="flex items-start gap-3 border border-neutral-100 p-3.5">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
                 <path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
@@ -258,108 +247,17 @@ export default async function ProductPage({
               </div>
             </div>
           </div>
-
-          {/* Description + Features */}
-          <p className="text-[14px] text-neutral-600 leading-relaxed mb-5">
-            {product.description}
-          </p>
-          <ul className="space-y-2">
-            {features.map((f) => (
-              <li key={f} className="flex items-center gap-2.5 text-[13px] text-neutral-700">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-                {f}
-              </li>
-            ))}
-          </ul>
-
-          {/* Description image */}
-          {product.descriptionImage && (
-            <div className="mt-6 rounded-lg overflow-hidden border border-neutral-100">
-              <img
-                src={product.descriptionImage}
-                alt={`${product.name} — détail`}
-                className="w-full object-contain"
-              />
-            </div>
-          )}
         </div>
       </div>
       </ProductColorProvider>
-      <section className="mt-16 border-t border-neutral-100 pt-12">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="h-display text-2xl md:text-3xl">Avis clients</h2>
-            <div className="w-8 h-[3px] bg-black mt-2" />
-          </div>
-          <div className="flex items-center gap-3 bg-neutral-50 border border-neutral-100 px-4 py-3">
-            <div>
-              <p className="text-3xl font-black leading-none">4.0</p>
-              <div className="flex gap-0.5 mt-1">
-                {[1,2,3,4,5].map((s) => (
-                  <svg key={s} width="10" height="10" viewBox="0 0 24 24" fill={s <= 4 ? "#facc15" : "none"} stroke={s <= 4 ? "#facc15" : "#d4d4d4"} strokeWidth="1.5">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                  </svg>
-                ))}
-              </div>
-              <p className="text-[11px] text-neutral-400 mt-1">38 avis</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Review cards */}
-        <div className="grid md:grid-cols-3 gap-4">
-          {[
-            { author: "Youssef M.", city: "Casablanca", rating: 5, date: "12 avr. 2026", title: "Excellent produit !", text: "Très bonne qualité, livraison rapide. Je recommande sans hésiter, exactement comme sur les photos. Taille parfaite pour du 44.", color: "Bleu", verified: true },
-            { author: "Sara K.", city: "Rabat", rating: 4, date: "8 avr. 2026", title: "Satisfaite de ma commande", text: "Produit conforme à la description. Emballage soigné et livraison en 3 jours. Je repasserai commande sur L'ecomax sans hésiter.", color: "Gris", verified: true },
-            { author: "Amine B.", city: "Marrakech", rating: 4, date: "3 avr. 2026", title: "Bon rapport qualité-prix", text: "Bon rapport qualité-prix. La couleur est fidèle aux photos. Livré en 4 jours à Marrakech. Semelle confortable pour la marche.", color: "Jaune", verified: true },
-          ].map((r) => (
-            <div key={r.author} className="flex flex-col gap-3 p-5 border border-neutral-100 bg-white">
-              {/* Top: avatar + name + date */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-neutral-900 text-white flex items-center justify-center text-[13px] font-black flex-shrink-0">
-                    {r.author.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="font-black text-[13px] leading-tight">{r.author}</p>
-                    <p className="text-[11px] text-neutral-400">{r.city}</p>
-                  </div>
-                </div>
-                <span className="text-[11px] text-neutral-400 whitespace-nowrap mt-0.5">{r.date}</span>
-              </div>
-
-              {/* Stars + title */}
-              <div>
-                <div className="flex gap-0.5 mb-1">
-                  {[1,2,3,4,5].map((s) => (
-                    <svg key={s} width="12" height="12" viewBox="0 0 24 24" fill={s <= r.rating ? "#facc15" : "none"} stroke={s <= r.rating ? "#facc15" : "#d4d4d4"} strokeWidth="1.5">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                    </svg>
-                  ))}
-                </div>
-                <p className="font-black text-[13px]">{r.title}</p>
-              </div>
-
-              {/* Review text */}
-              <p className="text-[13px] text-neutral-600 leading-relaxed flex-1">{r.text}</p>
-
-              {/* Footer: color + verified */}
-              <div className="flex items-center justify-between pt-3 border-t border-neutral-100">
-                <span className="text-[11px] text-neutral-400">Couleur : <span className="text-neutral-600 font-medium">{r.color}</span></span>
-                {r.verified && (
-                  <span className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    Achat vérifié
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ── Full-width accordions ── */}
+      <ProductAccordion
+        description={product.description}
+        features={features}
+        descriptionImage={(product.descriptionImages ?? (product.descriptionImage ? [product.descriptionImage] : []))[0]}
+        productSlug={product.slug}
+      />
 
       {/* ── Related ── */}
       {related.length > 0 && (

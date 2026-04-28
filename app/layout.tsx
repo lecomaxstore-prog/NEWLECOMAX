@@ -4,9 +4,9 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnnouncementBar from "@/components/AnnouncementBar";
-import MobileNav from "@/components/MobileNav";
 import { CartProvider } from "@/components/CartContext";
 import PageTracker from "@/components/PageTracker";
+import AdminLayoutWrapper from "@/components/AdminLayoutWrapper";
 
 export const metadata: Metadata = {
   title: "L'ecomax | Sport, Style & Performance",
@@ -33,11 +33,14 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col font-sans">
         <CartProvider>
           <PageTracker />
-          <AnnouncementBar />
-          <Header />
-          <main className="flex-1 pb-16 md:pb-0">{children}</main>
-          <Footer />
-          <MobileNav />
+          <AdminLayoutWrapper>
+            <AnnouncementBar />
+            <Header />
+          </AdminLayoutWrapper>
+          <main className="flex-1">{children}</main>
+          <AdminLayoutWrapper>
+            <Footer />
+          </AdminLayoutWrapper>
         </CartProvider>
       </body>
     </html>
