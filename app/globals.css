@@ -211,44 +211,31 @@ body {
 
 /* ── Logo animations ──────────────────────────────────────────────── */
 @keyframes logo-bar-in {
-  from { opacity: 0; transform: translateY(9px); }
-  65%  { transform: translateY(-2px); }
-  to   { opacity: 1; transform: translateY(0); }
+  0%   { opacity: 0; transform: translateY(12px) scaleY(0.6); }
+  60%  { transform: translateY(-3px) scaleY(1.04); }
+  80%  { transform: translateY(1px) scaleY(0.98); }
+  100% { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+@keyframes logo-dot-in {
+  0%   { opacity: 0; transform: scale(0) translateY(4px); }
+  70%  { transform: scale(1.4) translateY(-1px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 @keyframes logo-text-in {
-  from { opacity: 0; transform: translateX(-8px); }
-  to   { opacity: 1; transform: translateX(0); }
+  0%   { opacity: 0; transform: translateX(-10px) skewX(-4deg); filter: blur(4px); }
+  100% { opacity: 1; transform: translateX(0) skewX(0); filter: blur(0); }
 }
 @keyframes logo-sweep {
-  0%, 70%  { transform: translateX(-100%) skewX(-18deg); opacity: 0; }
-  73%      { opacity: 1; }
-  90%      { transform: translateX(500%) skewX(-18deg); opacity: 0; }
-  100%     { transform: translateX(500%) skewX(-18deg); opacity: 0; }
+  0%, 65%  { transform: translateX(-120%) skewX(-20deg); opacity: 0; }
+  68%      { opacity: 1; }
+  88%      { transform: translateX(520%) skewX(-20deg); opacity: 0.6; }
+  100%     { transform: translateX(520%) skewX(-20deg); opacity: 0; }
 }
 
 /* ── Trust badge pulse ──────────────────────────────────────────── */
 @keyframes trust-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Logo animations ──────────────────────────────────── */
-@keyframes logo-bar-in {
-  from { opacity: 0; transform: translateY(9px); }
-  65%  { transform: translateY(-2px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes logo-text-in {
-  from { opacity: 0; transform: translateX(-8px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes logo-sweep {
-  0%, 70%  { transform: translateX(-100%) skewX(-18deg); opacity: 0; }
-  73%      { opacity: 1; }
-  90%      { transform: translateX(500%) skewX(-18deg); opacity: 0; }
-  100%     { transform: translateX(500%) skewX(-18deg); opacity: 0; }
 }
 
 /* ── Scroll Reveal System ──────────────────────────────────────────── */

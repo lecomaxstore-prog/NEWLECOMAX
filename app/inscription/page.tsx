@@ -93,7 +93,7 @@ export default function RegisterPage() {
                 <input
                   id="prenom" type="text" autoComplete="given-name" required
                   value={prenom} onChange={(e) => setPrenom(e.target.value)}
-                  placeholder="Karim"
+                  placeholder="Zakaria"
                   className="w-full border border-neutral-200 px-4 py-3 text-sm placeholder-neutral-400 outline-none focus:border-black transition-colors"
                 />
               </div>
@@ -102,7 +102,7 @@ export default function RegisterPage() {
                 <input
                   id="nom" type="text" autoComplete="family-name" required
                   value={nom} onChange={(e) => setNom(e.target.value)}
-                  placeholder="Alaoui"
+                  placeholder="Zemzami"
                   className="w-full border border-neutral-200 px-4 py-3 text-sm placeholder-neutral-400 outline-none focus:border-black transition-colors"
                 />
               </div>
